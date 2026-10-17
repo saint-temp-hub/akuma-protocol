@@ -1,0 +1,6 @@
+{
+  "name": "AKUMA // Deduction Protocol",
+  "description": "Mobile-first 4-player 2v2 imperfection-deduction card game with real-time room sync, Outlaw laws, and physical silence constraints.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
