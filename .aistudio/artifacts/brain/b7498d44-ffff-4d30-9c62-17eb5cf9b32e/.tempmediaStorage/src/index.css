@@ -1,0 +1,143 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --bg-matte: #0B0B0B;
+    --frame-charcoal: #1A1A1A;
+    --team-a-crimson: #ff0033;
+    --team-b-cyan: #00f0ff;
+    --acma-gold: #FFD700;
+  }
+
+  body {
+    background-color: #0B0B0B;
+    color: #E6E6E6;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    overflow-x: hidden;
+  }
+}
+
+/* Card Back Styling */
+.card-back-crimson {
+  background-color: #150508;
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(239, 68, 68, 0.25) 0px,
+    rgba(239, 68, 68, 0.25) 3px,
+    transparent 3px,
+    transparent 10px
+  ), repeating-linear-gradient(
+    -45deg,
+    rgba(239, 68, 68, 0.25) 0px,
+    rgba(239, 68, 68, 0.25) 3px,
+    transparent 3px,
+    transparent 10px
+  );
+  border: 1px solid rgba(239, 68, 68, 0.5);
+}
+
+.card-back-navy {
+  background-color: #040e18;
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(6, 182, 212, 0.25) 0px,
+    rgba(6, 182, 212, 0.25) 3px,
+    transparent 3px,
+    transparent 10px
+  ), repeating-linear-gradient(
+    -45deg,
+    rgba(6, 182, 212, 0.25) 0px,
+    rgba(6, 182, 212, 0.25) 3px,
+    transparent 3px,
+    transparent 10px
+  );
+  border: 1px solid rgba(6, 182, 212, 0.5);
+}
+
+/* Luxury Card Face Styling */
+.playing-card-face {
+  background: linear-gradient(165deg, #FFFDF8 0%, #F5F2EA 100%);
+  color: #111111;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6), 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+/* Glowing suit highlight for Whispered Elimination */
+@keyframes goldPulse {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.6), inset 0 0 5px rgba(245, 158, 11, 0.4);
+    border-color: #F59E0B;
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.9), inset 0 0 10px rgba(245, 158, 11, 0.6);
+    border-color: #FBBF24;
+  }
+}
+
+.whispered-suit-highlight {
+  animation: goldPulse 1.8s infinite;
+  border-color: #F59E0B !important;
+}
+
+/* Float Animation for Vault */
+@keyframes floatVault {
+  0%, 100% {
+    transform: translateY(0px) scale(1);
+  }
+  50% {
+    transform: translateY(-4px) scale(1.02);
+  }
+}
+
+.vault-float {
+  animation: floatVault 4s ease-in-out infinite;
+}
+
+/* Smooth Deal Entry Animation */
+@keyframes dealIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.card-deal-anim {
+  animation: dealIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Shimmer Highlight for Key Buttons */
+@keyframes shimmerGlow {
+  0%, 100% {
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 1;
+    filter: drop-shadow(0 0 12px rgba(245, 158, 11, 0.5));
+  }
+}
+
+.shimmer-active {
+  animation: shimmerGlow 2.5s ease-in-out infinite;
+}
+
+/* Sleek custom scrollbars */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: #0B0B0B;
+}
+::-webkit-scrollbar-thumb {
+  background: #2E2E2E;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #444444;
+}

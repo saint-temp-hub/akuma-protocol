@@ -1,0 +1,30 @@
+{
+  "REAL": {
+    "room": "REAL",
+    "phase": "LOBBY",
+    "gameMode": "AKUMA",
+    "players": [
+      {
+        "id": "dev1_host",
+        "name": "Player One",
+        "team": "A",
+        "slot": 0,
+        "rating": 100,
+        "roundPoints": 0,
+        "isHost": true,
+        "connected": true
+      },
+      {
+        "id": "dev2_guest",
+        "name": "Player Two",
+        "team": "B",
+        "slot": 1,
+        "rating": 100,
+        "roundPoints": 0,
+        "isHost": false,
+        "connected": true
+      }
+    ],
+    "updatedAt": 1792335150690
+  }
+}

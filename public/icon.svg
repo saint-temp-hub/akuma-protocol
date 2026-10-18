@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="112" fill="#0E0E0E"/>
+  <rect x="16" y="16" width="480" height="480" rx="96" fill="none" stroke="#F59E0B" stroke-width="12" stroke-opacity="0.8"/>
+  <circle cx="256" cy="256" r="180" fill="#171717" stroke="#F59E0B" stroke-width="6"/>
+  <!-- Demon horns and face silhouette -->
+  <path d="M160 180 C140 120 180 80 210 110 C210 140 190 170 180 190 Z" fill="#EF4444"/>
+  <path d="M352 180 C372 120 332 80 302 110 C302 140 322 170 332 190 Z" fill="#EF4444"/>
+  <path d="M170 200 C170 170 342 170 342 200 C360 270 340 360 256 380 C172 360 152 270 170 200 Z" fill="#1C1917" stroke="#EF4444" stroke-width="8"/>
+  <!-- Glowing eyes -->
+  <polygon points="200,240 240,256 210,270" fill="#F59E0B"/>
+  <polygon points="312,240 272,256 302,270" fill="#F59E0B"/>
+  <!-- Mouth / Grin -->
+  <path d="M216 310 Q256 340 296 310" stroke="#F59E0B" stroke-width="8" stroke-linecap="round" fill="none"/>
+  <!-- Text -->
+  <text x="256" y="440" font-family="monospace" font-size="44" font-weight="900" fill="#F59E0B" text-anchor="middle" letter-spacing="4">AKUMA</text>
+</svg>

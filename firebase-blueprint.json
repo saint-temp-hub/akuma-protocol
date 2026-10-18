@@ -1,0 +1,34 @@
+{
+  "entities": {
+    "Room": {
+      "title": "Room",
+      "description": "Multiplayer game room containing real-time game state, player rosters, and turn actions.",
+      "type": "object",
+      "properties": {
+        "roomCode": {
+          "type": "string",
+          "description": "4-letter unique room code"
+        },
+        "phase": {
+          "type": "string",
+          "description": "Current phase: LOBBY, ROUND_ACTIVE, ROUND_CONCLUDED"
+        },
+        "stateJson": {
+          "type": "string",
+          "description": "Serialized full GameState object"
+        },
+        "updatedAt": {
+          "type": "number",
+          "description": "Timestamp of the last action"
+        }
+      },
+      "required": ["roomCode", "phase", "stateJson", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/rooms/{roomId}": {
+      "schema": "Room",
+      "description": "Individual game room document synchronized across devices in real time"
+    }
+  }
+}

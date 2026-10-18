@@ -33,6 +33,7 @@ import { InterceptionOverlay } from './components/InterceptionOverlay.tsx';
 import { RulesGuideModal } from './components/RulesGuideModal.tsx';
 import { ExitRoomModal } from './components/ExitRoomModal.tsx';
 import { soundEffects } from './utils/soundEffects.ts';
+import { testFirestoreConnection } from './network/firebase.ts';
 
 function generateRoomId(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -61,6 +62,35 @@ export default function App() {
   const [interceptionAlert, setInterceptionAlert] = useState<InterceptionNotification | null>(null);
   const [isLandingRulesOpen, setIsLandingRulesOpen] = useState<boolean>(false);
   const [isHeaderExitModalOpen, setIsHeaderExitModalOpen] = useState<boolean>(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isAppInstalled, setIsAppInstalled] = useState<boolean>(false);
+
+  // Track PWA installability
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.matchMedia('(display-mode: standalone)').matches) {
+      setIsAppInstalled(true);
+    }
+
+    const handleBeforeInstall = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+    };
+  }, []);
+
+  const handleInstallApp = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setIsAppInstalled(true);
+    }
+    setDeferredPrompt(null);
+  };
 
   const networkRef = useRef<NetworkManager | null>(null);
 
@@ -97,6 +127,8 @@ export default function App() {
 
   // Identity Re-Binding & Autostart on Mount
   useEffect(() => {
+    testFirestoreConnection();
+
     const urlParams = new URLSearchParams(window.location.search);
     const autostart = urlParams.get('autostart');
     const roomParam = urlParams.get('room');
@@ -124,20 +156,20 @@ export default function App() {
     const savedSession = NetworkManager.loadSession();
     if (savedSession && savedSession.roomId && savedSession.playerId) {
       const net = new NetworkManager();
-      const savedRoomState = net.loadRoomState(savedSession.roomId);
-
-      if (savedRoomState) {
-        const matchingPlayer = savedRoomState.players.find(
-          (p) => p.id === savedSession.playerId
-        );
-        if (matchingPlayer) {
-          setCurrentUserId(matchingPlayer.id);
-          setCurrentUserName(matchingPlayer.name);
-          setGameState(savedRoomState);
-          setupNetwork(savedSession.roomId, matchingPlayer.id);
-          return;
+      net.fetchRoomStateFromServer(savedSession.roomId).then((serverState) => {
+        const stateToUse = serverState || net.loadRoomState(savedSession.roomId);
+        if (stateToUse) {
+          const matchingPlayer = stateToUse.players.find(
+            (p) => p.id === savedSession.playerId
+          );
+          if (matchingPlayer) {
+            setCurrentUserId(matchingPlayer.id);
+            setCurrentUserName(matchingPlayer.name);
+            setGameState(stateToUse);
+            setupNetwork(savedSession.roomId, matchingPlayer.id);
+          }
         }
-      }
+      });
     }
 
     if (roomParam) {
@@ -160,7 +192,7 @@ export default function App() {
   };
 
   // Host: Create New Room
-  const handleCreateRoom = (e?: React.FormEvent) => {
+  const handleCreateRoom = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const name = nameInput.trim() || 'Player 1';
     const roomId = generateRoomId();
@@ -182,10 +214,14 @@ export default function App() {
     setCurrentUserName(name);
     setGameState(initial);
     setupNetwork(roomId, playerId);
+
+    // Save to central server so other devices can join
+    const net = new NetworkManager();
+    await net.createRoomOnServer(roomId, initial);
   };
 
   // Join Existing Room
-  const handleJoinRoom = (e?: React.FormEvent) => {
+  const handleJoinRoom = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const room = roomInput.trim().toUpperCase();
     if (!room) {
@@ -197,8 +233,24 @@ export default function App() {
     const playerId = generatePlayerId();
 
     const net = new NetworkManager();
-    const existing = net.loadRoomState(room);
 
+    // 1. First try server-authoritative join (essential for cross-device multiplayer)
+    const serverJoin = await net.joinRoomOnServer(room, name, playerId);
+    if (serverJoin.success && serverJoin.state && serverJoin.player) {
+      setCurrentUserId(serverJoin.player.id);
+      setCurrentUserName(serverJoin.player.name);
+      setGameState(serverJoin.state);
+      setupNetwork(room, serverJoin.player.id);
+      return;
+    }
+
+    if (serverJoin.error && !serverJoin.error.includes('Could not connect')) {
+      alert(serverJoin.error);
+      return;
+    }
+
+    // 2. Local fallback if server is unreachable
+    const existing = net.loadRoomState(room);
     if (existing) {
       const occupiedSlots = new Set(existing.players.map((p) => p.slot));
       let availableSlot = -1;
@@ -238,25 +290,11 @@ export default function App() {
       setupNetwork(room, playerId);
       setTimeout(() => {
         networkRef.current?.broadcastState(updatedState);
-      }, 500);
-    } else {
-      const hostPlayer: Player = {
-        id: playerId,
-        name,
-        team: 'A',
-        slot: 0,
-        rating: 100,
-        roundPoints: 0,
-        isHost: true,
-        connected: true,
-      };
-
-      const initial = createInitialState(room, hostPlayer);
-      setCurrentUserId(playerId);
-      setCurrentUserName(name);
-      setGameState(initial);
-      setupNetwork(room, playerId);
+      }, 300);
+      return;
     }
+
+    alert(`Room "${room}" was not found. Please verify the 4-letter room code with the host, or create a new room!`);
   };
 
   // Solo / Instant Demo Match (vs Bots) for rapid play & testing
@@ -538,12 +576,10 @@ export default function App() {
     const updatedState: GameState = {
       ...gameState,
       commsHistory: [...gameState.commsHistory, chatMsg],
+      updatedAt: Date.now(),
     };
 
-    setGameState(updatedState);
-    if (networkRef.current) {
-      networkRef.current.broadcastChat(chatMsg);
-    }
+    updateAndBroadcastState(updatedState);
   };
 
   // Exit Room
@@ -586,6 +622,18 @@ export default function App() {
         </div>
 
         <div className="flex items-center space-x-2 text-xs font-mono">
+          {deferredPrompt && !isAppInstalled && (
+            <button
+              type="button"
+              onClick={handleInstallApp}
+              className="px-2.5 py-1 rounded-lg bg-amber-400 hover:bg-amber-300 text-black text-[11px] font-bold uppercase tracking-wider flex items-center space-x-1 cursor-pointer transition-colors shadow-sm"
+              title="Install as Android App"
+            >
+              <span>📲</span>
+              <span>Install App</span>
+            </button>
+          )}
+
           {gameState && (
             <>
               <span className="text-[11px] text-neutral-400 hidden sm:inline mr-1">
@@ -646,6 +694,18 @@ export default function App() {
                   <span>📜</span>
                   <span>HOW TO PLAY & BEGINNER RULES GUIDE</span>
                 </button>
+
+                {/* Install as Android App (APK / PWA) */}
+                {deferredPrompt && !isAppInstalled && (
+                  <button
+                    type="button"
+                    onClick={handleInstallApp}
+                    className="w-full py-2.5 px-3 bg-gradient-to-r from-amber-500/20 to-amber-400/20 hover:from-amber-500/30 hover:to-amber-400/30 border border-amber-400/60 rounded-xl text-xs font-black tracking-wider uppercase text-amber-300 cursor-pointer flex items-center justify-center space-x-2 transition-all shadow-lg shadow-amber-500/10"
+                  >
+                    <span>📲</span>
+                    <span>INSTALL AS ANDROID APP (APK)</span>
+                  </button>
+                )}
 
                 {/* Player Name Input */}
                 <div className="text-left pt-1">
